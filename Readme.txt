@@ -1,0 +1,1 @@
+It's required to install Json.net to parse the files.
