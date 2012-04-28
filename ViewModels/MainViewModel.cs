@@ -12,6 +12,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
+using System.Xml.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Net;
 
 
 namespace Winstagram
@@ -20,34 +24,13 @@ namespace Winstagram
     {
         public MainViewModel()
         {
-            this.Items = new ObservableCollection<ItemViewModel>();
+            this.Items = new ObservableCollection<InstagramPost>();
         }
 
         /// <summary>
         /// A collection for ItemViewModel objects.
         /// </summary>
-        public ObservableCollection<ItemViewModel> Items { get; private set; }
-
-        private string _sampleProperty = "Sample Runtime Property Value";
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding
-        /// </summary>
-        /// <returns></returns>
-        public string SampleProperty
-        {
-            get
-            {
-                return _sampleProperty;
-            }
-            set
-            {
-                if (value != _sampleProperty)
-                {
-                    _sampleProperty = value;
-                    NotifyPropertyChanged("SampleProperty");
-                }
-            }
-        }
+        public ObservableCollection<InstagramPost> Items { get; private set; }
 
         public bool IsDataLoaded
         {
@@ -60,26 +43,67 @@ namespace Winstagram
         /// </summary>
         public void LoadData()
         {
-            // Sample data; replace with real data
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime one", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime three", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime four", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime five", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime six", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime seven", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime eight", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime nine", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime ten", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime eleven", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime twelve", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime thirteen", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime fourteen", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime fifteen", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime sixteen", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });
 
-            this.IsDataLoaded = true;
+            /*for (int i = 0; i < 10; i++)
+            {
+                Items.Add(new InstagramPost()
+                {
+                    Username = "User" + i.ToString(),
+                    Caption = "Description" + i.ToString(),
+                    Image = @"http://upload.wikimedia.org/wikipedia/en/2/28/Instagram_logo.png"
+                    
+                });
+
+            }*/
+
+            WebClient req = new WebClient();
+            
+            req.DownloadStringCompleted += new System.Net.DownloadStringCompletedEventHandler(
+                delegate(object sender, System.Net.DownloadStringCompletedEventArgs e)
+                {
+                    JObject o = JObject.Parse(e.Result);
+                    JArray posts = (JArray)o["data"];
+                    foreach (JObject post in posts)
+                    {
+                        
+
+                        try
+                        {
+                            JObject captionArray = (JObject)post.SelectToken("caption");
+                            InstagramPost item = new InstagramPost();
+
+                            if (captionArray != null)
+                            {
+
+                                Items.Add(new InstagramPost()
+                                {
+                                    Caption = (string)captionArray.SelectToken("text"),
+                                    Username = (string)captionArray.SelectToken("from").SelectToken("username"),
+                                    Image = (string)post.SelectToken("images").SelectToken("standard_resolution").SelectToken("url")
+                                });
+                            }
+                            else
+                                continue;
+                        }
+                        catch (Exception )
+                        {
+                            continue;
+                        }
+                    }
+                    this.IsDataLoaded = true;
+                });
+			
+            // download the popular photos
+            req.DownloadStringAsync(new Uri(@"https://api.instagram.com/v1/media/popular?client_id=5c545224bace4df68beb588b384ab80f"));
         }
+
+        public class InstagramPost
+        {
+            public string Username { get; set; }
+            public string Image { get; set; }
+            public string Caption { get; set; }
+        }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String propertyName)
